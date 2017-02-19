@@ -38,7 +38,6 @@
     (fn
       [[start end]]
       (loop [paths []]
-        (println paths start end)
         (let [user-in (input "Enter path-start, path-end and distance: ")]
           (if (= user-in "")
             (alg/dijkstra paths (read-string start) (read-string end))
