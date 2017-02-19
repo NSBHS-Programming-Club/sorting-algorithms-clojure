@@ -1,83 +1,11 @@
 (ns experiments.core
   (:gen-class)
-  (:require [experiments.command-line :as cl]))
+  (:require [clojure.string :as str]
+            [experiments.command-line :as cl]
+            [experiments.algorithms :as alg]))
 
-(defn bubble-sort [array]
-  (loop [ind 0
-         sort-arr array
-         swaps? 0]
-    (if (= ind (dec (count array)))
-      (if (not= swaps? 0)
-        (bubble-sort sort-arr))
-      (if (> (nth sort-arr ind) (nth sort-arr (inc ind)))
-        (let
-          [temp-arr
-            (vec
-              (concat
-                (subvec sort-arr 0 ind)
-                [(nth sort-arr (inc ind))]
-                [(nth sort-arr ind)]
-                (subvec sort-arr (+ ind 2))))]
-          (do
-            (println temp-arr)
-            (recur (inc ind) temp-arr (inc swaps?))))
-        (recur (inc ind) sort-arr swaps?)))))
-
-(defn merge-sort [array]
-  (defn split-array [arr]
-    (loop [orig arr final []]
-      (if (< (count orig) 2)
-        (if (= (count orig) 1)
-          (conj final orig)
-          final)
-        (recur
-          (subvec orig 2)
-          (conj final (subvec orig 0 2))))))
-  (defn sort-two [[a b]]
-     (loop [arr-a a
-            arr-b b
-            final []]
-       (if
-         (or
-           (empty? arr-a)
-           (empty? arr-b))
-         (vec
-           (concat
-             final
-             (if (empty? arr-a) arr-b arr-a)))
-         (if (> (first arr-a) (first arr-b))
-           (recur
-             arr-a
-             (vec (rest arr-b))
-             (conj final (first arr-b)))
-           (recur
-             (vec (rest arr-a))
-             arr-b
-             (conj final (first arr-a)))))))
-  (loop
-    [sort-arr
-      (split-array
-        (vec
-          (for [a (range (count array))] [(nth array a)])))]
-    (if (= (count sort-arr) 1)
-      (println (sort-two (nth sort-arr 0)))
-      (recur
-        (split-array
-          (loop [ind 0
-                 temp-arr sort-arr]
-            (println temp-arr)
-            (if (= ind (count temp-arr)) temp-arr
-              (recur
-                (inc ind)
-                (vec
-                    (concat
-                      (subvec temp-arr 0 ind)
-                      [(if (= (count (nth temp-arr ind)) 1)
-                         (nth (nth temp-arr ind) 0)
-                         (sort-two (nth temp-arr ind)))]
-                      (subvec temp-arr (inc ind))))))))))))
-
-(defn gen-random-array [length]
+; Generate a random array
+(defn random-array [length]
   (loop [arr []]
     (if (= (count arr) length) arr
       (let [rand-val (rand-int length)]
@@ -85,28 +13,50 @@
           (recur arr)
           (recur (conj arr rand-val)))))))
 
+(defn input [string]
+  (print string)
+  (flush)
+  (read-line))
+
+; Initialise arguments
 (defn init-args []
   (cl/add-arg "-b" "bubble"
     ["Print the procedure of bubble-sorting,"
      "given an arbitrary amount of arguments."]
     (fn
       ([]
-       (bubble-sort
-         (gen-random-array 10)))
+       (alg/bubble-sort
+         (random-array 10)))
       ([args]
-       (bubble-sort
+       (alg/bubble-sort
          (vec
            (for [a (range (count args))]
              (read-string (nth args a))))))))
+  (cl/add-arg "-d" "dijkstra"
+    ["Prints the shortest path using Dijkstra's algorithm,"
+     "given paths, a starting node and an ending node."]
+    (fn
+      [[start end]]
+      (loop [paths []]
+        (println paths start end)
+        (let [user-in (input "Enter path-start, path-end and distance: ")]
+          (if (= user-in "")
+            (alg/dijkstra paths (read-string start) (read-string end))
+            (recur
+              (conj paths
+                (vec
+                  (let [list-strs (str/split user-in #" ")]
+                    (for [a (range (count list-strs))]
+                      (read-string (nth list-strs a))))))))))))
   (cl/add-arg "-m" "merge"
     ["Print the procedure of merge-sorting,"
      "given an arbitrary amount of arguments."]
     (fn
       ([]
-       (merge-sort
-         (gen-random-array 10)))
+       (alg/merge-sort
+         (random-array 10)))
       ([args]
-       (merge-sort
+       (alg/merge-sort
          (vec
            (for [a (range (count args))]
              (read-string (nth args a))))))))
@@ -115,9 +65,10 @@
     (fn
       ([args]
        (println
-         (gen-random-array
+         (random-array
            (read-string (nth args 0))))))))
 
+; Main argument
 (defn -main [& args]
   (init-args)
   (cl/parse-arg (vec args)))
